@@ -1,0 +1,71 @@
+
+/// Horizontal sort
+void sortHorizontal(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform samplerRECT input,
+        uniform samplerRECT ops,
+        uniform float offset,       // Radius
+        uniform float spass,        // Sorting pass id
+		out float4 col		 : COLOR
+		)
+{
+    /// Fetch operation to do in this pass, multiply by two to convert into [-1,1] range
+    /// op[0] is operation (1 GT, -1 LE)
+    /// op[1] is offset sign
+    float4 op = texRECT(ops, float2(outputCoord[0], spass)) * 2.0 - 1.0;
+    /// Do operation
+    float4 val1 = texRECT(input, outputCoord);
+    float4 val2 = texRECT(input, outputCoord+float2(op[1]*offset, 0));
+    if(val1[0]*op[0] > val2[0]*op[0])
+    {
+        col = val2;
+    }
+    else
+    {
+        col = val1;
+    }
+}
+
+/// Horizontal flip
+/// Flip every 'skip' rows
+void flipHorizontal(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform samplerRECT input,
+        uniform float width,        // Width of texture
+        uniform float skip,        // Width of texture
+		out float4 col		 : COLOR
+		)
+{
+    if(fmod(outputCoord[1], skip*2) > skip)
+        col = texRECT(input, float2(width-outputCoord[0], outputCoord[1]));
+    else
+        col = texRECT(input, outputCoord);
+}
+
+/// Vertical sort
+void sortVertical(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform samplerRECT input,
+        uniform samplerRECT ops,
+        uniform float offset,       // Radius
+        uniform float spass,        // Sorting pass id
+		out float4 col		 : COLOR
+		)
+{
+    /// Fetch operation to do in this pass, multiply by two to convert into [-1,1] range
+    /// op[0] is operation (1 GT, -1 LE)
+    /// op[1] is offset sign
+    float4 op = texRECT(ops, float2(outputCoord[1], spass)) * 2.0 - 1.0;
+    /// Do operation
+    float4 val1 = texRECT(input, outputCoord);
+    float4 val2 = texRECT(input, outputCoord+float2(0, op[1]*offset));
+    if(val1[0]*op[0] > val2[0]*op[0])
+    {
+        col = val2;
+    }
+    else
+    {
+        col = val1;
+    }
+}
+

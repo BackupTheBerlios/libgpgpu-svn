@@ -1,0 +1,135 @@
+/// Particle positions to cell IDs
+void posToCell(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform samplerRECT positions, // Texture with positions
+        uniform float3 cellsize, // {cellsizex, cellsizey, cellsizez}
+        uniform float3 cellmult, // {1, cellsx, cellsx*cellsy}
+        uniform float3 stagger, // Position offset, in cells
+		out float3 col		 : COLOR
+		)
+{
+    float3 pos = texRECT(positions, outputCoord);
+    /// Position to cell ID
+    col[0] = dot(floor(pos/cellsize)+stagger, cellmult);
+    col[1] = outputCoord[0];
+    col[2] = outputCoord[1];
+}
+///
+
+void initial(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform float height,
+        uniform samplerRECT cellids, // Texture with cell ids per particle
+		out float3 col		 : COLOR
+		)
+{
+    float id = texRECT(cellids, outputCoord);
+    col[0] = 0.5; // min
+    col[1] = height+0.5; // max
+    col[2] = id;
+}
+
+/// Vertical search
+void searchVertical(
+        float2 outputCoord	 : TEXCOORD0,
+		out float3 col		 : COLOR,
+        uniform samplerRECT needle,  // current search state
+        uniform samplerRECT haystack // search space
+        )
+{
+    float3 v = texRECT(needle, outputCoord);
+    // v[0] min
+    // v[1] max
+    // v[2] target value
+    float mid = (v[0]+v[1])/2;
+    float w = texRECT(haystack, float2(0, mid));
+    col[2] = v[2];
+    if(w <= v[2])
+    {
+        col[0] = mid;
+        col[1] = v[1];
+    }
+    else
+    {
+        col[0] = v[0];
+        col[1] = mid;
+    }
+}
+/// Pre horizontal search
+void initialHorizontal(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform float width,
+		out float4 col		 : COLOR,
+        uniform samplerRECT needle // search space
+		)
+{
+    float3 v = texRECT(needle, outputCoord);
+    col[0] = 0.5; // min
+    col[1] = width+0.5; // max
+    col[2] = v[2]; // target value
+    col[3] = v[0]; // Y value
+}
+/// Horizontal search
+void searchHorizontal(
+        float2 outputCoord	 : TEXCOORD0,
+		out float4 col		 : COLOR,
+        uniform samplerRECT needle,  // current search state
+        uniform samplerRECT haystack // search space
+        )
+{
+    float4 v = texRECT(needle, outputCoord);
+    // v[0] min
+    // v[1] max
+    // v[2] target value
+    // v[3] y value
+    float mid = (v[0]+v[1])/2;
+    float w = texRECT(haystack, float2(mid, v[3]));
+    col[2] = v[2];
+    col[3] = v[3];
+    if(w <= v[2])
+    {
+        col[0] = mid;
+        col[1] = v[1];
+    }
+    else
+    {
+        col[0] = v[0];
+        col[1] = mid;
+    }
+}
+
+// Converts a texture coordinate and a relative offset to a new coordinate
+float2 fromRelative(float2 coord, float diff, float width)
+{
+    coord[0] = coord[0] - diff;
+    if(coord[0] < 0)
+    {
+        coord[1] = coord[1] - 1;
+        coord[0] = coord[0] + width;
+    }
+    return coord;
+}
+
+/// Test loop
+void testLookup(
+        float2 outputCoord	 : TEXCOORD0,
+		out float3 col		 : COLOR,
+        uniform float width,    // width of texture
+        uniform samplerRECT needle,  // current search state
+        uniform samplerRECT haystack, // search space
+        uniform samplerRECT positions // particle positions space
+        )
+{
+    float4 v = texRECT(needle, outputCoord);
+    float3 ipos = texRECT(positions, outputCoord); // Position of current particle
+    
+    // v[0] x value
+    // v[3] y value
+    float2 haystack_coord = float2(v[0], v[3]);
+    
+    float4 data = texRECT(haystack, fromRelative(haystack_coord, 1, width));
+    float3 jpos = texRECT(positions, float2(data[1],data[2]));
+    
+    col = data[2]-outputCoord[1];
+}
+

@@ -1,0 +1,75 @@
+
+/// Pivot sort
+void pivotHorizontal(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform samplerRECT input,
+        uniform float pivot,       // x coordinate of pivot point
+		out float4 col		 : COLOR
+		)
+{
+    /// Do operation
+    float dist = pivot - outputCoord[0]; /// Distance to pivot point
+    float4 val1 = texRECT(input, outputCoord);
+    float4 val2 = texRECT(input, float2(pivot+dist, outputCoord[1]));
+    /// Use sign of distance to see which operation to use
+    float op = sign(dist);
+
+    if(op*val1[0] > op*val2[0])
+    {
+        col = val2;
+    }
+    else
+    {
+        col = val1;
+    }
+}
+void pivotVertical(
+        float2 outputCoord	 : TEXCOORD0,
+        uniform samplerRECT input,
+        uniform float pivot,       // y coordinate of pivot point
+        uniform float width,       // width of texture
+		out float4 col		 : COLOR
+		)
+{
+    /// Do operation
+    float dist = pivot - outputCoord[1]; /// Distance to pivot point
+    float4 val1 = texRECT(input, outputCoord);
+    float4 val2 = texRECT(input, float2(width-outputCoord[0], pivot+dist));
+    /// Use sign of distance to see which operation to use
+    float op = sign(dist);
+
+    if(op*val1[0] > op*val2[0])
+    {
+        col = val2;
+    }
+    else
+    {
+        col = val1;
+    }
+}
+
+// Generic sort. Needs control over texcoords.
+// Texcoord 0 output coord (+input coord 1)
+// Texcoord 1 input coord 2
+// Texcoord 2 operation (sign 1.0..-1.0, 0 must fall on pivot)
+void pivot(
+        half2 outputCoord	 : TEXCOORD0,
+        half2 val2Coord	 : TEXCOORD1,
+        half opt        	 : TEXCOORD2,
+        uniform samplerRECT input,
+		out half4 col		 : COLOR
+		)
+{
+    /// Do operation
+    half4 val1 = texRECT(input, outputCoord);
+    half4 val2 = texRECT(input, val2Coord);
+    half op = sign(opt);
+    if(op*val1[0] > op*val2[0])
+    {
+        col = val2;
+    }
+    else
+    {
+        col = val1;
+    }
+}

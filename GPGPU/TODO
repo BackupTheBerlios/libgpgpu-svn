@@ -1,0 +1,2 @@
+- Occlusion queries to count affected pixels
+ -- can be used to "count" wether a set is already sufficiently sorted
